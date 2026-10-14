@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ETF · 股指期货 数据面板（2026-04-01 ~ 2026-09-15）</title>
+<script src="assets/echarts.min.js"></script>
+<script src="data/etf_daily.js"></script>
+<script src="data/futures_daily.js"></script>
+<script src="data/signals.js"></script>
+<style>
+:root{
+  --bg:#0a0e17; --bg2:#0d1424; --card:#111a2e; --card2:#16203a; --line:#1e2b45;
+  --txt:#e2e8f0; --sub:#8b9bb4; --blue:#3b82f6; --cyan:#22d3ee;
+  --red:#ef4444; --green:#10b981; --amber:#f59e0b; --purple:#a78bfa;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--txt);font-family:"Microsoft YaHei","PingFang SC",-apple-system,sans-serif;font-size:14px;line-height:1.6}
+.wrap{max-width:1440px;margin:0 auto;padding:16px 20px 60px}
+a{color:var(--cyan);text-decoration:none}
+.header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;padding:18px 0 14px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.header h1{font-size:24px;font-weight:700;letter-spacing:.5px}
+.header h1 .sub{font-size:13px;color:var(--sub);font-weight:400;margin-left:10px}
+.header .meta{color:var(--sub);font-size:12.5px;text-align:right}
+.header .meta b{color:var(--cyan);font-weight:600}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-bottom:18px}
+.kpi{background:linear-gradient(180deg,var(--card),var(--bg2));border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.kpi .k-label{color:var(--sub);font-size:12px;margin-bottom:4px}
+.kpi .k-value{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi .k-note{color:var(--sub);font-size:11.5px;margin-top:3px}
+.up{color:var(--red)} .down{color:var(--green)} .flat{color:var(--sub)}
+.tag{display:inline-block;padding:1px 8px;border-radius:4px;font-size:11.5px;font-weight:600;margin-right:4px}
+.tag-buy{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.35)}
+.tag-sell{background:rgba(16,185,129,.12);color:#34d399;border:1px solid rgba(16,185,129,.3)}
+.tag-weak{background:rgba(139,155,180,.12);color:var(--sub);border:1px solid rgba(139,155,180,.25)}
+.tag-key{background:rgba(245,158,11,.14);color:#fbbf24;border:1px solid rgba(245,158,11,.35)}
+nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+nav a{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:6px 14px;font-size:13px;color:var(--txt);transition:.15s}
+nav a:hover{border-color:var(--blue);color:var(--cyan)}
+.section{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:18px 18px 6px;margin-bottom:20px}
+.section h2{font-size:18px;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.section h2 .badge{font-size:11px;background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3);padding:1px 8px;border-radius:10px;font-weight:600}
+.section .desc{color:var(--sub);font-size:12.5px;margin-bottom:12px}
+h3{font-size:15px;font-weight:600;color:var(--cyan);margin:14px 0 8px}
+h3 .small{font-size:12px;color:var(--sub);font-weight:400;margin-left:6px}
+.chart{width:100%;height:360px;margin-bottom:10px}
+.chart-sm{width:100%;height:300px;margin-bottom:10px}
+.chart-tall{width:100%;height:420px;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:10px}
+th{background:var(--card2);color:#b9c7de;font-weight:600;text-align:right;padding:7px 10px;border-bottom:2px solid var(--line);white-space:nowrap;position:sticky;top:0}
+td{padding:6px 10px;border-bottom:1px solid rgba(30,43,69,.6);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+tbody tr:hover{background:rgba(59,130,246,.06)}
+.tbl-wrap{overflow:auto;max-height:520px;border:1px solid var(--line);border-radius:8px;background:var(--bg2)}
+.tbl-wrap.thin{max-height:340px}
+.num-red{color:#f87171} .num-green{color:#34d399} .num-flat{color:var(--sub)}
+.center{text-align:center}
+.pager{display:flex;gap:8px;align-items:center;margin:8px 0 14px;flex-wrap:wrap}
+.pager button{background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:5px;padding:4px 12px;cursor:pointer;font-size:12.5px}
+.pager button:hover:not(:disabled){border-color:var(--blue);color:var(--cyan)}
+.pager button:disabled{opacity:.4;cursor:not-allowed}
+.pager select,.pager input{background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:5px;padding:4px 8px;font-size:12.5px}
+.pager .info{color:var(--sub);font-size:12.5px}
+.signal-table td{vertical-align:top;padding:9px 10px}
+.signal-table .logic{text-align:left;color:#c6d2e8;max-width:820px}
+.signal-table .action{font-weight:700;white-space:normal;min-width:110px}
+.signal-table tr.key-row{background:rgba(245,158,11,.05)}
+.signal-table tr.key-row:hover{background:rgba(245,158,11,.1)}
+.legend-bar{display:flex;flex-wrap:wrap;gap:14px;color:var(--sub);font-size:12px;margin:6px 0 10px}
+.legend-bar span b{font-weight:600}
+.dot{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle}
+.foot{margin-top:26px;padding:14px 16px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;color:var(--sub);font-size:12px}
+.foot b{color:#b9c7de}
+.foot ol{margin:6px 0 0 18px}
+.foot li{margin:2px 0}
+.msg{color:var(--sub);font-size:12px;margin-bottom:8px}
+.hl{background:linear-gradient(90deg,rgba(239,68,68,.18),transparent);}
+.hl-sell{background:linear-gradient(90deg,rgba(16,185,129,.14),transparent);}
+.section-divider{height:1px;background:var(--line);margin:16px 0}
+@media(max-width:760px){.header h1{font-size:19px}.chart{height:280px}.chart-tall{height:320px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="header">
+  <h1>数据面板</h1>
+  <div class="meta" id="headerMeta">数据范围：2026-04-01 ~ 2026-10-13<br>更新时间：2026-10-14（数据截至 10-13 收盘）</div>
+</div>
+
+<div class="kpis" id="kpis"></div>
+
+<nav>
+  <a href="#etf">① ETF 国家队持仓</a>
+  <a href="#futures">② 股指期货多空数据</a>
+  <a href="#signals">③ 买卖点监控</a>
+</nav>
+
+<!-- ================= ETF 部分 ================= -->
+<div class="section" id="etf">
+  <h2>一、ETF 国家队持仓</h2>
+
+  <h3>1.1 全市场国家队 ETF 每日估算净流入与累计净流<span class="small">红柱=净申购（买），绿柱=净赎回（卖）</span></h3>
+  <div id="chartEtfTotal" class="chart-tall"></div>
+
+  <h3>1.2 单指数合计每日净流（护盘方向）<span class="small">沪深300 / 上证50 / 创业板 / 科创50 / 中证1000</span></h3>
+  <div id="chartEtfIndex" class="chart-tall"></div>
+
+  <h3>1.3 重点 ETF 每日估算净流</h3>
+  <div class="legend-bar" id="focusLegend"></div>
+  <div id="chartEtfFocus" class="chart-tall"></div>
+
+  <h3>1.4 重点 ETF 5 日累计净流（最新交易日）</h3>
+  <div id="chartEtfFocus5d" class="chart"></div>
+
+  <h3>1.5 季报持仓占比 TOP（汇金+证金）</h3>
+  <div class="tbl-wrap thin"><table id="tblRatio"><thead><tr>
+    <th>排名</th><th>ETF</th><th>代码</th><th>报告期</th><th>汇金+证金占比</th><th>持仓市值(亿)</th>
+  </tr></thead><tbody></tbody></table></div>
+
+  <h3>1.6 国家队 ETF 每日明细（全部核心组，可筛选）</h3>
+  <div class="pager">
+    <select id="etfSel"></select>
+    <select id="etfDaySel"><option value="ALL">全部日期</option></select>
+    <span class="info" id="etfTblInfo"></span>
+    <span style="flex:1"></span>
+    <button id="etfPrev">上一页</button>
+    <span class="info" id="etfPageInfo"></span>
+    <button id="etfNext">下一页</button>
+  </div>
+  <div class="tbl-wrap"><table id="tblEtf"><thead><tr>
+    <th>日期</th><th>ETF</th><th>分组</th><th>收盘价</th><th>涨跌%</th><th>成交额(亿)</th><th>总份额(亿份)</th><th>当日份额(亿份)</th><th>当日净流(亿)</th><th>5日净流(亿)</th><th>20日净流(亿)</th>
+  </tr></thead><tbody></tbody></table></div>
+</div>
+
+<!-- ================= 股指期货部分 ================= -->
+<div class="section" id="futures">
+  <h2>二、股指期货多空数据<span class="badge">IF / IH / IC / IM</span></h2>
+
+  <h3>2.1 前20合计净持仓 vs 上证指数<span class="small">净空扩大=绿，收窄=红</span></h3>
+  <div id="chartFutTop20" class="chart-tall"></div>
+
+  <h3>2.2 中信期货净持仓与 5 日净变<span class="small">中信 5 日净变 &gt;0 = 减空/偏多，&lt;0 = 加空/偏空</span></h3>
+  <div id="chartFutZx" class="chart-tall"></div>
+
+  <h3>2.3 各品种全合约净持仓趋势（IF/IH/IC/IM）</h3>
+  <div id="chartFutProducts" class="chart-tall"></div>
+
+  <h3>2.4 各品种 5 日净变（近 40 个交易日）<span class="small">红=减空/偏多，绿=加空/偏空</span></h3>
+  <div id="chartFut5d" class="chart-tall"></div>
+
+  <h3>2.5 每日多空明细（可筛选品种）</h3>
+  <div class="pager">
+    <select id="futSel"><option value="ALL">全部品种</option><option value="IF">IF 沪深300</option><option value="IH">IH 上证50</option><option value="IC">IC 中证500</option><option value="IM">IM 中证1000</option></select>
+    <span class="info" id="futTblInfo"></span>
+    <span style="flex:1"></span>
+    <button id="futPrev">上一页</button>
+    <span class="info" id="futPageInfo"></span>
+    <button id="futNext">下一页</button>
+  </div>
+  <div class="tbl-wrap"><table id="tblFut"><thead><tr>
+    <th>日期</th><th>品种</th><th>主力合约</th><th>主力多</th><th>主力空</th><th>主力净</th>
+    <th>全合约多</th><th>全合约空</th><th>全合约净</th><th>当日多增减</th><th>当日空增减</th>
+    <th>中信全合约净</th><th>中信5日净变</th><th>上证指数</th><th>涨跌%</th>
+  </tr></thead><tbody></tbody></table></div>
+</div>
+
+<!-- ================= 买卖点监控 ================= -->
+<div class="section" id="signals">
+  <h2>三、买卖点监控</h2>
+
+  <h3>3.1 ETF 买卖点（依据国家队持仓变动）</h3>
+  <div class="tbl-wrap"><table class="signal-table" id="tblSigEtf"><thead><tr>
+    <th style="width:190px">时间</th><th style="width:130px">操作</th><th>逻辑（国家队持仓变动依据）</th>
+  </tr></thead><tbody></tbody></table></div>
+
+  <h3>3.2 股指期货买卖点（辅助信号）</h3>
+  <div class="tbl-wrap thin"><table class="signal-table" id="tblSigFut"><thead><tr>
+    <th style="width:190px">时间</th><th style="width:130px">操作</th><th>逻辑（持仓边际变化依据）</th>
+  </tr></thead><tbody></tbody></table></div>
+</div>
+
+</div>
+
+<script>
+/* ================= 工具函数 ================= */
+const $ = id => document.getElementById(id);
+const fmt = (v, d=1) => {
+  if (v === null || v === undefined || isNaN(v)) return '—';
+  const s = v >= 0 ? '+' : '−';
+  const a = Math.abs(v).toFixed(d);
+  return s + a;
+};
+const fmtN = (v) => {
+  if (v === null || v === undefined || isNaN(v)) return '—';
+  return v.toLocaleString('zh-CN');
+};
+const clsNum = v => v > 0 ? 'num-red' : (v < 0 ? 'num-green' : 'num-flat');
+const pctColor = v => v > 0 ? 'num-red' : (v < 0 ? 'num-green' : 'num-flat');
+
+const ETF = window.ETF_DATA, FUT = window.FUTURES_DATA, SIG = window.SIGNALS_DATA;
+const etfDaily = ETF.daily, futDaily = FUT.daily;
+const dates = etfDaily.map(d => d.date);
+const lastEtf = etfDaily[etfDaily.length-1];
+const lastFut = futDaily[futDaily.length-1];
+
+/* ================= KPI 概览 ================= */
+(function(){
+  const totalFlow = etfDaily.reduce((s,d)=>s+(d.total_flow_yi||0),0);
+  const totalDelta = etfDaily.reduce((s,d)=>s+(d.total_delta_yi||0),0);
+  const maxBuy = etfDaily.reduce((a,d)=>(d.total_flow_yi||0)>a.v?{v:d.total_flow_yi,d:d.date}:a,{v:-1e9,d:''});
+  const maxSell = etfDaily.reduce((a,d)=>(d.total_flow_yi||0)<a.v?{v:d.total_flow_yi,d:d.date}:a,{v:1e9,d:''});
+  const kpis = [
+    {label:'国家队ETF区间累计净申赎', value:fmt(totalFlow,0)+' 亿', cls:totalFlow>0?'up':'down', note:'份额累计 '+fmt(totalDelta,0)+' 亿份（4/1-9/15）'},
+    {label:'单日最大净申购', value:fmt(maxBuy.v,0)+' 亿', cls:'up', note:maxBuy.d+'（国家队大举入场）'},
+    {label:'单日最大净赎回', value:fmt(maxSell.v,0)+' 亿', cls:'down', note:maxSell.d+'（国家队大额兑现）'},
+    {label:'期货前20净持仓(最新)', value:fmtN(lastFut.total_all_net)+' 手', cls:lastFut.total_all_net<0?'down':'up', note:'中信净 '+fmtN(lastFut.zx_total_all_net)+' 手 · 中信5日净变 '+fmt(lastFut.zx_5d_var,0)+' 手'},
+  ];
+  $('kpis').innerHTML = kpis.map(k=>`<div class="kpi"><div class="k-label">${k.label}</div><div class="k-value ${k.cls}">${k.value}</div><div class="k-note">${k.note}</div></div>`).join('');
+})();
+
+/* ================= 通用图表工具 ================= */
+function mkChart(el){ return echarts.init(el, null, {renderer:'canvas'}); }
+const AXIS_TXT = '#8b9bb4', SPLIT = 'rgba(30,43,69,.5)';
+function baseGrid(extra){ return Object.assign({left:60,right:60,top:40,bottom:56}, extra||{}); }
+function baseTooltip(extra){
+  return Object.assign({
+    trigger:'axis', backgroundColor:'rgba(13,20,36,.92)', borderColor:'#2a3a5e',
+    textStyle:{color:'#e2e8f0', fontSize:12}, axisPointer:{type:'shadow'}
+  }, extra||{});
+}
+function dataZoom(bottom){ return [{type:'inside',start:0,end:100},{type:'slider',height:18,bottom:bottom||8,borderColor:'#2a3a5e',backgroundColor:'#0d1424',fillerColor:'rgba(59,130,246,.25)',handleStyle:{color:'#3b82f6'},textStyle:{color:'#8b9bb4'}}]; }
+function catAxis(){ return {type:'category',data:dates,axisLine:{lineStyle:{color:'#2a3a5e'}},axisLabel:{color:AXIS_TXT,fontSize:11,formatter:v=>v.slice(5)},splitLine:{show:false}}; }
+function valAxis(name,color){ return {type:'value',name:name,nameTextStyle:{color:'#8b9bb4',fontSize:11},axisLabel:{color:AXIS_TXT,fontSize:11},splitLine:{lineStyle:{color:SPLIT}},axisLine:{show:false}}; }
+function fmtYi(v){ return (v>=0?'+':'')+v.toFixed(0)+'亿'; }
+
+/* ================= 1.1 ETF 全市场 ================= */
+(function(){
+  const chart = mkChart($('chartEtfTotal'));
+  chart.setOption({
+    tooltip: baseTooltip({formatter: ps => {
+      let h = `<b>${ps[0].axisValue}</b><br>`;
+      ps.forEach(p=>{ h += `${p.marker}${p.seriesName}：${p.value==null?'—':(p.value>0?'+':'')+p.value.toFixed(1)} 亿<br>`; });
+      return h;
+    }}),
+    legend:{data:['当日净流入','5日累计','20日累计'],textStyle:{color:'#b9c7de',fontSize:12},top:6},
+    grid: baseGrid({right:70}),
+    xAxis: catAxis(),
+    yAxis: [valAxis('亿元'), valAxis('累计(亿元)',{show:false})],
+    dataZoom: dataZoom(),
+    series:[
+      {name:'当日净流入',type:'bar',data:etfDaily.map(d=>d.total_flow_yi==null?null:+d.total_flow_yi.toFixed(1)),
+       itemStyle:{color:p=>p.value>=0?'rgba(239,68,68,.85)':'rgba(16,185,129,.8)'},barMaxWidth:8},
+      {name:'5日累计',type:'line',yAxisIndex:1,smooth:true,symbol:'none',lineStyle:{width:1.6,color:'#f59e0b'},data:etfDaily.map(d=>d.flow_5d_yi==null?null:+d.flow_5d_yi.toFixed(1))},
+      {name:'20日累计',type:'line',yAxisIndex:1,smooth:true,symbol:'none',lineStyle:{width:1.4,color:'#22d3ee'},data:etfDaily.map(d=>d.flow_20d_yi==null?null:+d.flow_20d_yi.toFixed(1))},
+    ]
+  });
+  window.addEventListener('resize',()=>chart.resize());
+})();
+
+/* ================= 1.2 单指数合计 ================= */
+(function(){
+  const chart = mkChart($('chartEtfIndex'));
+  const idxNames = ['沪深300','上证50','创业板','科创50','中证1000','中证500'];
+  const colors = {沪深300:'#ef4444',上证50:'#f59e0b',创业板:'#22d3ee',科创50:'#a78bfa',中证1000:'#10b981',中证500:'#3b82f6'};
+  chart.setOption({
+    tooltip: baseTooltip({formatter: ps => {
+      let h = `<b>${ps[0].axisValue}</b><br>`;
+      ps.forEach(p=>{ const v=p.value; h += `${p.marker}${p.seriesName}：${v==null?'—':(v>0?'+':'')+v.toFixed(1)} 亿<br>`; });
+      return h;
+    }}),
+    legend:{data:idxNames,textStyle:{color:'#b9c7de',fontSize:11.5},top:6},
+    grid: baseGrid(),
+    xAxis: catAxis(),
+    yAxis: valAxis('净流(亿元)'),
+    dataZoom: dataZoom(),
+    series: idxNames.map(n=>({
+      name:n, type:'line', smooth:true, symbol:'none', lineStyle:{width:1.3,color:colors[n]},
+      data: etfDaily.map(d=>{ const v=d.indices[n]; return v?+v.flow.toFixed(1):null; })
+    }))
+  });
+  window.addEventListener('resize',()=>chart.resize());
+})();
+
+/* ================= 1.3 重点 ETF 每日净流 ================= */
+(function(){
+  const focus = ['510300','510500','512100','159845','159915'];
+  const names = {510300:'沪深300ETF华泰柏瑞',510500:'中证500ETF南方',512100:'中证1000ETF南方',159845:'华夏中证1000ETF',159915:'创业板ETF易方达'};
+  const colors = {510300:'#c0392b',510500:'#16a085',512100:'#2980b9',159845:'#8e44ad',159915:'#e67e22'};
+  $('focusLegend').innerHTML = Object.keys(names).map(c=>`<span><span class="dot" style="background:${colors[c]}"></span><b>${names[c]}</b></span>`).join('');
+  const chart = mkChart($('chartEtfFocus'));
+  const series = [];
+  Object.keys(names).forEach(code=>{
+    const s = ETF.etf_series[code];
+    if(!s) return;
+    const pmap = Object.fromEntries(s.points.map(p=>[p.date,p]));
+    series.push({
+      name:names[code], type:'bar', stack: code, barMaxWidth:10,
+      itemStyle:{color:colors[code]},
+      data: dates.map(d=>{ const p=pmap[d]; return p&&p.flow_yi!=null?+p.flow_yi.toFixed(1):null; })
+    });
+  });
+  chart.setOption({
+    tooltip: baseTooltip({formatter: ps => {
+      let h = `<b>${ps[0].axisValue}</b><br>`;
+      let total=0;
+      ps.forEach(p=>{ if(p.value!=null) total+=p.value; h += `${p.marker}${p.seriesName}：${(p.value>0?'+':'')+p.value.toFixed(1)} 亿<br>`; });
+      h += `<b>5只合计：${(total>0?'+':'')+total.toFixed(1)} 亿</b>`;
+      return h;
+    }}),
+    legend:{data:Object.values(names),textStyle:{color:'#b9c7de',fontSize:11.5},top:6},
+    grid: baseGrid(),
+    xAxis: catAxis(),
+    yAxis: valAxis('净流(亿元)'),
+    dataZoom: dataZoom(),
+    series
+  });
+  window.addEventListener('resize',()=>chart.resize());
+})();
+
+/* ================= 1.4 重点 ETF 5日净流（最新） ================= */
+(function(){
+  const chart = mkChart($('chartEtfFocus5d'));
+  const names = {510300:'沪深300ETF华泰柏瑞',510500:'中证500ETF南方',512100:'中证1000ETF南方',159845:'华夏中证1000ETF',159915:'创业板ETF易方达'};
+  const colors = {510300:'#c0392b',510500:'#16a085',512100:'#2980b9',159845:'#8e44ad',159915:'#e67e22'};
+  const rows = [];
+  Object.keys(names).forEach(code=>{
+    const s = ETF.etf_series[code]; if(!s) return;
+    const pts = s.points.filter(p=>p.flow_yi!=null);
+    const f5 = pts.slice(-5).reduce((a,p)=>a+p.flow_yi,0);
+    const d1 = pts.length? pts[pts.length-1].flow_yi : null;
+    rows.push({name:names[code], f5:+f5.toFixed(1), d1:d1==null?null:+d1.toFixed(1), color:colors[code]});
+  });
+  rows.sort((a,b)=>a.f5-b.f5);
+  chart.setOption({
+    tooltip: baseTooltip({axisPointer:{type:'shadow'},formatter:ps=>{
+      const d=ps[0]; return `<b>${d.name}</b><br>当日净流：${d.data.d1==null?'—':fmt(d.data.d1)+' 亿'}<br>5日净流：<b style="color:${d.value>=0?'#f87171':'#34d399'}">${fmt(d.value)} 亿</b>`;
+    }}),
+    grid:{left:220,right:60,top:30,bottom:30},
+    xAxis:{type:'value',axisLabel:{color:AXIS_TXT,fontSize:11,formatter:'{value}亿'},splitLine:{lineStyle:{color:SPLIT}}},
+    yAxis:{type:'category',data:rows.map(r=>r.name),axisLabel:{color:'#b9c7de',fontSize:12},axisLine:{show:false},axisTick:{show:false}},
+    series:[{type:'bar',data:rows.map(r=>({value:r.f5,d1:r.d1})),barMaxWidth:16,
+      itemStyle:{color:p=>p.value>=0?'rgba(239,68,68,.85)':'rgba(16,185,129,.8)',borderRadius:3},
+      label:{show:true,position:'right',formatter:p=>fmt(p.value)+'亿',color:'#b9c7de',fontSize:11}}
+    ]
+  });
+  window.addEventListener('resize',()=>chart.resize());
+})();
+
+/* ================= 1.5 季报持仓占比 TOP ================= */
+(function(){
+  const tbody = document.querySelector('#tblRatio tbody');
+  tbody.innerHTML = ETF.disclosures_top.slice(0,15).map((r,i)=>`
+    <tr>
+      <td>${i+1}</td><td>${r.is_focus?r.focus_mark+' ':''}${r.name}</td><td>${r.code}</td>
+      <td>${r.report_date}</td>
+      <td class="num-red"><b>${r.ratio.toFixed(1)}%</b></td>
+      <td>${fmtN(r.value_yi)}</td>
+    </tr>`).join('');
+})();
+
+/* ================= 1.6 ETF 明细表 ================= */
+(function(){
+  const sel = $('etfSel'), daySel = $('etfDaySel');
+  const codes = Object.keys(ETF.etf_series).filter(c=>ETF.etf_series[c].is_core).sort((a,b)=>a-b);
+  sel.innerHTML = '<option value="ALL">全部ETF（'+codes.length+'只）</option>' +
+    codes.map(c=>{const s=ETF.etf_series[c]; return `<option value="${c}">${s.name}（${c}）</option>`;}).join('');
+  daySel.innerHTML = '<option value="ALL">全部日期</option>' + dates.map(d=>`<option value="${d}">${d}</option>`).join('');
+
+  let page=0, per=60;
+  const rows=[];
+  codes.forEach(c=>{
+    const s=ETF.etf_series[c];
+    s.points.forEach(p=>{
+      rows.push({code:c,name:s.name,group:s.group,date:p.date,close:p.close,turnover:p.turnover_yi,
+        units:p.units_yi,delta:p.delta_yi,flow:p.flow_yi,points:s.points,prev_close:s.prev_close});
+    });
+  });
+  rows.sort((a,b)=>a.date<b.date?-1:1);
+
+  function flowND(points, idx, n){
+    let sum=0, cnt=0;
+    for(let i=idx;i>=0 && cnt<n;i--){ if(points[i].flow_yi!=null){sum+=points[i].flow_yi; cnt++;} }
+    return cnt? +sum.toFixed(2): null;
+  }
+  function render(){
+    let f = rows;
+    const c = sel.value;
+    const d = daySel.value;
+    if(c!=='ALL') f = f.filter(r=>r.code===c);
+    if(d!=='ALL') f = f.filter(r=>r.date===d);
+    const pages = Math.max(1,Math.ceil(f.length/per));
+    if(page>=pages) page=pages-1;
+    const slice = f.slice(page*per, page*per+per);
+    $('etfTblInfo').textContent = `共 ${f.length} 条`;
+    $('etfPageInfo').textContent = `第 ${page+1} / ${pages} 页`;
+    $('etfPrev').disabled = page<=0;
+    $('etfNext').disabled = page>=pages-1;
+    const tbody = document.querySelector('#tblEtf tbody');
+    tbody.innerHTML = slice.map(r=>{
+      const idx = r.points.findIndex(p=>p.date===r.date);
+      const f5 = flowND(r.points, idx, 5), f20 = flowND(r.points, idx, 20);
+      const prev = idx>0? r.points[idx-1].close : r.prev_close;
+      const pct = prev? (r.close/prev-1)*100:null;
+      return `<tr>
+        <td>${r.date}</td><td>${r.name}</td><td style="text-align:left">${r.group}</td>
+        <td>${r.close??'—'}</td>
+        <td class="${pctColor(pct)}">${pct==null?'—':fmt(pct,2)+'%'}</td>
+        <td>${r.turnover==null?'—':r.turnover.toFixed(1)}</td>
+        <td>${r.units==null?'—':r.units.toFixed(1)}</td>
+        <td class="${clsNum(r.delta)}">${r.delta==null?'—':fmt(r.delta,2)}</td>
+        <td class="${clsNum(r.flow)}">${r.flow==null?'—':fmt(r.flow,2)}</td>
+        <td class="${clsNum(f5)}">${f5==null?'—':fmt(f5,2)}</td>
+        <td class="${clsNum(f20)}">${f20==null?'—':fmt(f20,2)}</td>
+      </tr>`;
+    }).join('');
+  }
+  sel.onchange=()=>{page=0;render();};
+  daySel.onchange=()=>{page=0;render();};
+  $('etfPrev').onclick=()=>{page--;render();};
+  $('etfNext').onclick=()=>{page++;render();};
+  render();
+})();
+
+/* ================= 2.1 期货前20净持仓 ================= */
+(function(){
+  const chart = mkChart($('chartFutTop20'));
+  const sh = futDaily.map(d=>d.indices['上证指数']?d.indices['上证指数'].close:null);
+  chart.setOption({
+    tooltip: baseTooltip({formatter: ps => {
+      let h = `<b>${ps[0].axisValue}</b><br>`;
+      ps.forEach(p=>{
+        if(p.seriesName==='前20合计净持仓') h += `${p.marker}${p.seriesName}：<b>${fmtN(p.value)} 手</b>（${p.value<0?'净空':'净多'}）<br>`;
+        else if(p.value!=null) h += `${p.marker}${p.seriesName}：${p.value.toFixed(2)}<br>`;
+      });
+      const d = futDaily.find(x=>x.date===ps[0].axisValue);
+      if(d) h += `<span style="color:#8b9bb4">中信5日净变：${fmt(d.zx_5d_var,0)} 手</span>`;
+      return h;
+    }}),
+    legend:{data:['前20合计净持仓','上证指数'],textStyle:{color:'#b9c7de',fontSize:12},top:6},
+    grid: baseGrid({right:70}),
+    xAxis: catAxis(),
+    yAxis: [valAxis('净持仓(手)'), {type:'value',name:'上证指数',nameTextStyle:{color:'#8b9bb4',fontSize:11},axisLabel:{color:AXIS_TXT,fontSize:11},splitLine:{show:false}}],
+    dataZoom: dataZoom(),
+    series:[
+      {name:'前20合计净持仓',type:'line',smooth:true,symbol:'none',lineStyle:{width:1.8},
+       areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(239,68,68,.25)'},{offset:1,color:'rgba(239,68,68,.02)'}]}},
+       data:futDaily.map(d=>d.total_all_net)},
+      {name:'上证指数',type:'line',yAxisIndex:1,smooth:true,symbol:'none',lineStyle:{width:1.3,color:'#22d3ee'},data:sh},
+    ]
+  });
+  window.addEventListener('resize',()=>chart.resize());
+})();
+
+/* ================= 2.2 中信净持仓 ================= */
+(function(){
+  const chart = mkChart($('chartFutZx'));
+  chart.setOption({
+    tooltip: baseTooltip({formatter: ps => {
+      let h = `<b>${ps[0].axisValue}</b><br>`;
+      ps.forEach(p=>{
+        if(p.seriesName==='中信净持仓') h += `${p.marker}${p.seriesName}：<b>${fmtN(p.value)} 手</b>（${p.value<0?'净空':'净多'}）<br>`;
+        else if(p.value!=null) h += `${p.marker}${p.seriesName}：${fmt(p.value,0)} 手<br>`;
+      });
+      return h;
+    }}),
+    legend:{data:['中信净持仓','中信5日净变'],textStyle:{color:'#b9c7de',fontSize:12},top:6},
+    grid: baseGrid(),
+    xAxis: catAxis(),
+    yAxis: valAxis('手'),
+    dataZoom: dataZoom(),
+    series:[
+      {name:'中信净持仓',type:'line',smooth:true,symbol:'none',lineStyle:{width:1.8,color:'#3b82f6'},
+       areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(59,130,246,.22)'},{offset:1,color:'rgba(59,130,246,.02)'}]}},
+       data:futDaily.map(d=>d.zx_total_all_net)},
+      {name:'中信5日净变',type:'bar',barMaxWidth:8,
+       itemStyle:{color:p=>p.value>=0?'rgba(239,68,68,.75)':'rgba(16,185,129,.7)'},
+       data:futDaily.map(d=>d.zx_5d_var==null?null:d.zx_5d_var)},
+    ]
+  });
+  window.addEventListener('resize',()=>chart.resize());
+})();
+
+/* ================= 2.3 各品种净持仓 ================= */
+(function(){
+  const chart = mkChart($('chartFutProducts'));
+  const names = {IF:'沪深300(IF)',IH:'上证50(IH)',IC:'中证500(IC)',IM:'中证1000(IM)'};
+  const colors = {IF:'#ef4444',IH:'#f59e0b',IC:'#22d3ee',IM:'#a78bfa'};
+  chart.setOption({
+    tooltip: baseTooltip({formatter: ps => {
+      let h = `<b>${ps[0].axisValue}</b><br>`;
+      ps.forEach(p=>{ h += `${p.marker}${p.seriesName}：<b>${fmtN(p.value)} 手</b><br>`; });
+      return h;
+    }}),
+    legend:{data:Object.values(names),textStyle:{color:'#b9c7de',fontSize:12},top:6},
+    grid: baseGrid(),
+    xAxis: catAxis(),
+    yAxis: valAxis('全合约净持仓(手)'),
+    dataZoom: dataZoom(),
+    series: Object.keys(names).map(k=>({
+      name:names[k], type:'line', smooth:true, symbol:'none', lineStyle:{width:1.4,color:colors[k]},
+      data:futDaily.map(d=>{ const p=d.products[k]; return p?p.all_net:null; })
+    }))
+  });
+  window.addEventListener('resize',()=>chart.resize());
+})();
+
+/* ================= 2.4 各品种5日净变 ================= */
+(function(){
+  const chart = mkChart($('chartFut5d'));
+  const names = {IF:'沪深300(IF)',IH:'上证50(IH)',IC:'中证500(IC)',IM:'中证1000(IM)'};
+  const colors = {IF:'#ef4444',IH:'#f59e0b',IC:'#22d3ee',IM:'#a78bfa'};
+  const d40 = futDaily.slice(-40);
+  const x40 = d40.map(d=>d.date);
+  chart.setOption({
+    tooltip: baseTooltip({formatter: ps => {
+      let h = `<b>${ps[0].axisValue}</b><br>`;
+      ps.forEach(p=>{ h += `${p.marker}${p.seriesName}：<b style="color:${p.value>=0?'#f87171':'#34d399'}">${fmt(p.value,0)} 手</b>（${p.value>=0?'减空/偏多':'加空/偏空'}）<br>`; });
+      return h;
+    }}),
+    legend:{data:Object.values(names),textStyle:{color:'#b9c7de',fontSize:12},top:6},
+    grid: baseGrid(),
+    xAxis:{type:'category',data:x40,axisLine:{lineStyle:{color:'#2a3a5e'}},axisLabel:{color:AXIS_TXT,fontSize:11,formatter:v=>v.slice(5)},splitLine:{show:false}},
+    yAxis: valAxis('5日净变(手)'),
+    dataZoom: [{type:'inside',start:0,end:100},{type:'slider',height:18,bottom:8,borderColor:'#2a3a5e',backgroundColor:'#0d1424',fillerColor:'rgba(59,130,246,.25)',handleStyle:{color:'#3b82f6'},textStyle:{color:'#8b9bb4'}}],
+    series: Object.keys(names).map(k=>{
+      const base = futDaily.length - d40.length;
+      const data = d40.map((d,di)=>{
+        if(di<5) return null;
+        const p=d.products[k], q=futDaily[base+di-5].products[k];
+        return p&&q? p.all_net-q.all_net : null;
+      });
+      return {
+        name:names[k], type:'bar', barMaxWidth:14,
+        itemStyle:{color:p=>p.value>=0?'rgba(239,68,68,.7)':'rgba(16,185,129,.65)'},
+        data
+      };
+    })
+  });
+  window.addEventListener('resize',()=>chart.resize());
+})();
+
+/* ================= 2.5 期货明细表 ================= */
+(function(){
+  const sel = $('futSel');
+  let page=0, per=80;
+  const rows=[];
+  futDaily.forEach((d,di)=>{
+    Object.keys(d.products).forEach(k=>{
+      const p=d.products[k];
+      const prev = di>=5 ? futDaily[di-5].products[k] : null;
+      const zx5 = prev ? p.zx_all_net - prev.zx_all_net : null;
+      rows.push({date:d.date, prod:k, name:p.name, dom:p.dominant, dom_l:p.dom_long, dom_s:p.dom_short, dom_n:p.dom_net,
+        all_l:p.all_long, all_s:p.all_short, all_n:p.all_net, dlv:p.all_long_var, dsv:p.all_short_var,
+        zx_all:p.zx_all_net, zx5: zx5,
+        idx:d.indices['上证指数']?d.indices['上证指数'].close:null, pct:d.indices['上证指数']?d.indices['上证指数'].pct:null});
+    });
+  });
+  rows.reverse();
+  function render(){
+    let f = rows;
+    if(sel.value!=='ALL') f = f.filter(r=>r.prod===sel.value);
+    const pages = Math.max(1,Math.ceil(f.length/per));
+    if(page>=pages) page=pages-1;
+    const slice = f.slice(page*per, page*per+per);
+    $('futTblInfo').textContent = `共 ${f.length} 条`;
+    $('futPageInfo').textContent = `第 ${page+1} / ${pages} 页`;
+    $('futPrev').disabled = page<=0;
+    $('futNext').disabled = page>=pages-1;
+    document.querySelector('#tblFut tbody').innerHTML = slice.map(r=>`
+      <tr>
+        <td>${r.date}</td><td><b>${r.prod}</b> ${r.name}</td><td>${r.dom}</td>
+        <td>${fmtN(r.dom_l)}</td><td>${fmtN(r.dom_s)}</td>
+        <td class="${clsNum(r.dom_n)}">${fmtN(r.dom_n)}</td>
+        <td>${fmtN(r.all_l)}</td><td>${fmtN(r.all_s)}</td>
+        <td class="${clsNum(r.all_n)}"><b>${fmtN(r.all_n)}</b></td>
+        <td class="${clsNum(r.dlv)}">${fmt(r.dlv,0)}</td>
+        <td class="${clsNum(r.dsv)}">${fmt(r.dsv,0)}</td>
+        <td class="${clsNum(r.zx_all)}">${fmtN(r.zx_all)}</td>
+        <td class="${clsNum(r.zx5)}">${r.zx5==null?'—':fmt(r.zx5,0)}</td>
+        <td>${r.idx==null?'—':r.idx.toFixed(2)}</td>
+        <td class="${pctColor(r.pct)}">${r.pct==null?'—':fmt(r.pct,2)+'%'}</td>
+      </tr>`).join('');
+  }
+  sel.onchange=()=>{page=0;render();};
+  $('futPrev').onclick=()=>{page--;render();};
+  $('futNext').onclick=()=>{page++;render();};
+  render();
+})();
+
+/* ================= 3 买卖点监控 ================= */
+(function(){
+  function renderSig(list, tbodyId, weak){
+    const tbody = document.querySelector(tbodyId);
+    tbody.innerHTML = list.map((s,i)=>{
+      const isBuy = s.action.includes('买入') || s.action.includes('偏多');
+      const isSell = s.action.includes('卖出') || s.action.includes('偏空');
+      const tagCls = isBuy?'tag-buy':(isSell?'tag-sell':'tag-weak');
+      const tagTxt = isBuy?'买点':(isSell?'卖点':'中性');
+      const key = s.level.includes('强') || (!weak && (s.level.includes('买点')&&!s.level.includes('弱')) );
+      return `<tr class="${key?'key-row':''}">
+        <td><b>${s.date}</b><br><span class="tag ${tagCls}">${s.level}</span></td>
+        <td class="action ${isBuy?'num-red':(isSell?'num-green':'num-flat')}">${s.action}</td>
+        <td class="logic">${s.logic}</td>
+      </tr>`;
+    }).join('');
+  }
+  renderSig(SIG.etf, '#tblSigEtf tbody', false);
+  renderSig(SIG.futures, '#tblSigFut tbody', true);
+})();
+</script>
+</body>
+</html>

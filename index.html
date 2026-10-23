@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ETF · 股指期货 数据面板（2026-04-01 ~ 2026-10-21）</title>
+<title>ETF · 股指期货 数据面板（2026-04-01 ~ 2026-10-22）</title>
 <script src="assets/echarts.min.js"></script>
 <script src="data/etf_daily.js"></script>
 <script src="data/futures_daily.js"></script>
@@ -85,7 +85,7 @@ tbody tr:hover{background:rgba(59,130,246,.06)}
 
 <div class="header">
   <h1>数据面板</h1>
-  <div class="meta" id="headerMeta">数据范围：2026-04-01 ~ 2026-10-21<br>更新时间：2026-10-22（数据截至 10-21 收盘）</div>
+  <div class="meta" id="headerMeta">数据范围：2026-04-01 ~ 2026-10-22<br>更新时间：2026-10-23（数据截至 10-22 收盘）</div>
 </div>
 
 <div class="kpis" id="kpis"></div>
@@ -211,7 +211,7 @@ const lastFut = futDaily[futDaily.length-1];
   const maxBuy = etfDaily.reduce((a,d)=>(d.total_flow_yi||0)>a.v?{v:d.total_flow_yi,d:d.date}:a,{v:-1e9,d:''});
   const maxSell = etfDaily.reduce((a,d)=>(d.total_flow_yi||0)<a.v?{v:d.total_flow_yi,d:d.date}:a,{v:1e9,d:''});
   const kpis = [
-    {label:'国家队ETF区间累计净申赎', value:fmt(totalFlow,0)+' 亿', cls:totalFlow>0?'up':'down', note:'份额累计 '+fmt(totalDelta,0)+' 亿份（04-01 - 10-21）'},
+    {label:'国家队ETF区间累计净申赎', value:fmt(totalFlow,0)+' 亿', cls:totalFlow>0?'up':'down', note:'份额累计 '+fmt(totalDelta,0)+' 亿份（04-01 - 10-22）'},
     {label:'单日最大净申购', value:fmt(maxBuy.v,0)+' 亿', cls:'up', note:maxBuy.d+'（国家队大举入场）'},
     {label:'单日最大净赎回', value:fmt(maxSell.v,0)+' 亿', cls:'down', note:maxSell.d+'（国家队大额兑现）'},
     {label:'期货前20净持仓(最新)', value:fmtN(lastFut.total_all_net)+' 手', cls:lastFut.total_all_net<0?'down':'up', note:'中信净 '+fmtN(lastFut.zx_total_all_net)+' 手 · 中信5日净变 '+fmt(lastFut.zx_5d_var,0)+' 手'},
